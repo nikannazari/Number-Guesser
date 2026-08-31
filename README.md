@@ -2,7 +2,7 @@
 
 A modular number guessing game built with **Python**, featuring both a **Command Line Interface (CLI)** and a modern **Streamlit web interface**.
 
-The project is designed with a separation between the core game logic and the user interface, making the code easier to maintain, test, and extend.
+The project is designed with a separation between the core game logic and the user interface, making the code easier to maintain and extend.
 
 ---
 
@@ -12,7 +12,7 @@ The project is designed with a separation between the core game logic and the us
 
 The player starts with a score and loses points after every incorrect guess.
 
-The game provides feedback after every attempt:
+After each guess, the game provides feedback:
 
 * 📉 **Too Low** — the guessed number is lower than the secret number.
 * 📈 **Too High** — the guessed number is higher than the secret number.
@@ -40,20 +40,18 @@ The game ends when the player guesses the correct number or their score reaches 
 
 * Command Line Interface (CLI)
 * Streamlit Web Interface
-* Responsive and simple web UI
-* Interactive game controls
+* Interactive web UI
+* Real-time game feedback
+* Responsive layout
 
-### 🧑‍💻 Development
+### 🧑‍💻 Code Structure
 
 * Modular Python architecture
 * Object-Oriented Programming
-* Type hints
-* Dataclasses
-* Enums
-* Input validation
-* Unit testing with Pytest
+* Separation of game logic and UI
+* Reusable game components
 * Python package structure
-* Git/GitHub ready
+* Configurable game settings
 
 ---
 
@@ -76,7 +74,7 @@ The game starts with:
 Score: 100
 ```
 
-If the player makes an incorrect guess:
+After an incorrect guess:
 
 ```text
 Wrong Guess
@@ -86,7 +84,7 @@ Score - 10
 Score: 90
 ```
 
-The process continues until the player guesses correctly or reaches:
+The process continues until the player guesses correctly or the score reaches:
 
 ```text
 Score: 0
@@ -96,7 +94,7 @@ Score: 0
 
 # 🧠 Architecture
 
-The project separates the game logic from the user interface.
+The project separates the core game engine from the user interface.
 
 ```text
                          USER
@@ -125,16 +123,7 @@ The project separates the game logic from the user interface.
                      Game Result
 ```
 
-The core game engine does not depend on Streamlit.
-
-This means the same game logic can later be reused by:
-
-* CLI
-* Streamlit
-* REST API
-* Desktop GUI
-* Mobile application
-* Other interfaces
+The game engine is independent from Streamlit, allowing the same core logic to be reused with different interfaces in the future.
 
 ---
 
@@ -165,21 +154,11 @@ Number-Guesser/
 │           ├── commands.py
 │           └── input_validator.py
 │
-├── tests/
-│   ├── __init__.py
-│   ├── test_game.py
-│   ├── test_hint_generator.py
-│   ├── test_number_generator.py
-│   └── test_scorer.py
-│
-├── .github/
-│   └── workflows/
-│
 ├── .gitignore
 ├── LICENSE
 ├── README.md
-├── requirements.txt
-└── pyproject.toml
+├── pyproject.toml
+└── requirements.txt
 ```
 
 ---
@@ -190,7 +169,6 @@ The project currently uses:
 
 * **Python** — Core programming language
 * **Streamlit** — Web interface
-* **Pytest** — Unit testing
 * **Git** — Version control
 * **GitHub** — Repository and collaboration
 
@@ -239,45 +217,41 @@ source .venv/bin/activate
 
 ---
 
-## 4. Install the project
+## 4. Install dependencies
 
-Install the project in editable mode with development dependencies:
+Install the required dependencies:
 
 ```bash
-pip install -e ".[dev]"
+pip install -r requirements.txt
 ```
 
-This installs:
+The main dependency is:
 
-* The Number Guesser package
-* Streamlit
-* Pytest
+```text
+streamlit
+```
 
 ---
 
 # 💻 Running the CLI
 
-From the project root:
+After activating the virtual environment, run:
+
+```bash
+export PYTHONPATH="$PWD/src:$PYTHONPATH"
+```
+
+Then:
 
 ```bash
 python -m number_guesser.main
 ```
 
-You should see:
+The game will start in your terminal.
 
-```text
-========================================
-        NUMBER GUESSER
-========================================
-Guess a number between 1 and 100.
-Type 'q' to quit.
+You can enter a number between `1` and `100`.
 
-Your guess:
-```
-
-Enter a number between `1` and `100`.
-
-You can exit the game using:
+To exit the game, use:
 
 ```text
 q
@@ -289,13 +263,19 @@ exit
 
 # 🌐 Running the Streamlit Web App
 
-From the project root:
+From the project root, first make sure the package can be imported:
+
+```bash
+export PYTHONPATH="$PWD/src:$PYTHONPATH"
+```
+
+Then start Streamlit:
 
 ```bash
 streamlit run app/streamlit_app.py
 ```
 
-Streamlit will start a local server.
+Streamlit will start a local web server.
 
 Open the displayed address in your browser, usually:
 
@@ -316,78 +296,33 @@ The Streamlit interface provides:
 
 ---
 
-# 🧪 Running Tests
-
-Run all tests:
-
-```bash
-pytest -v
-```
-
-Or:
-
-```bash
-pytest
-```
-
-The test suite covers the main game components:
-
-```text
-Number Generator
-       │
-       ├── Range validation
-       └── Random number generation
-
-Hint Generator
-       │
-       ├── Too Low
-       ├── Too High
-       └── Correct
-
-Scorer
-       │
-       ├── Initial score
-       ├── Penalties
-       ├── Score limit
-       └── Reset
-
-Game Engine
-       │
-       ├── Initialization
-       ├── Guess processing
-       ├── Winning
-       ├── Game Over
-       └── Reset
-```
-
----
-
 # 📦 Dependencies
 
-The project uses the following main dependencies:
-
-```text
-streamlit
-pytest
-```
-
-Dependencies are listed in:
+Project dependencies are listed in:
 
 ```text
 requirements.txt
 ```
 
-and development configuration is defined in:
+Install them with:
+
+```bash
+pip install -r requirements.txt
+```
+
+Current dependency:
 
 ```text
-pyproject.toml
+streamlit>=1.40
 ```
 
 ---
 
 # 🔧 Configuration
 
-The default game configuration is defined when creating the game:
+The game engine is configurable.
+
+For example:
 
 ```python
 game = NumberGuessingGame(
@@ -398,69 +333,72 @@ game = NumberGuessingGame(
 )
 ```
 
-This makes the game engine configurable.
+The configuration controls:
 
-For example, a different game could use:
+| Parameter       | Description                         |
+| --------------- | ----------------------------------- |
+| `start`         | Minimum possible number             |
+| `end`           | Maximum possible number             |
+| `initial_score` | Starting player score               |
+| `penalty`       | Score lost after an incorrect guess |
 
-```python
-game = NumberGuessingGame(
-    start=1,
-    end=1000,
-    initial_score=500,
-    penalty=25,
-)
-```
+This allows different game configurations to be created without changing the core game logic.
 
 ---
 
 # 🧩 Core Components
 
-## Number Generator
+## 🎲 Number Generator
 
-Responsible for generating the secret number.
+Responsible for generating the secret number within the configured range.
 
-```python
-generate_number(1, 100)
+```text
+Minimum ─────────────── Maximum
+   │                         │
+   └──── Random Number ──────┘
 ```
 
 ---
 
-## Hint Generator
+## 💡 Hint Generator
 
-Evaluates the player's guess:
+Compares the player's guess with the secret number.
 
 ```text
 Guess < Secret Number
         ↓
-     TOO_LOW
+     TOO LOW
 
 Guess > Secret Number
         ↓
-     TOO_HIGH
+     TOO HIGH
 
 Guess == Secret Number
         ↓
-     CORRECT
+      CORRECT
 ```
 
 ---
 
-## Scorer
+## 🏆 Scorer
 
-Controls:
+Responsible for managing the player's score.
+
+It handles:
 
 * Initial score
-* Penalties
+* Score penalties
 * Minimum score
+* Score updates
 * Score reset
 
-The score can never become negative.
+The score cannot become negative.
 
 ---
 
-## Game Engine
+## 🎮 Game Engine
 
-`NumberGuessingGame` connects the main components together.
+`NumberGuessingGame` coordinates the different components of the game.
 
 It manages:
 
@@ -475,7 +413,7 @@ It manages:
 
 # 🔮 Future Improvements
 
-The project is intentionally designed to be extensible.
+The project is designed to be extended over time.
 
 Possible future features include:
 
@@ -499,12 +437,12 @@ Possible future features include:
 * [ ] Best performance
 * [ ] Leaderboard
 
-### 🌐 Web Application
+### 🌐 Web Interface
 
 * [ ] Improved animations
 * [ ] Sound effects
 * [ ] Dark / Light themes
-* [ ] Better responsive design
+* [ ] Advanced responsive design
 * [ ] Game statistics dashboard
 * [ ] Player profiles
 
@@ -523,14 +461,6 @@ Possible future features include:
 * [ ] CI/CD
 * [ ] Cloud deployment
 * [ ] Automated releases
-
-### 🧪 Testing
-
-* [ ] Higher test coverage
-* [ ] Integration tests
-* [ ] Streamlit testing
-* [ ] Property-based testing
-* [ ] Automated code quality checks
 
 ---
 
@@ -551,40 +481,39 @@ The main concepts practiced include:
 * Type hints
 * Dataclasses
 * Enums
-* Exceptions
+* Exception handling
 * Properties
 
 ### Software Engineering
 
-* Project structure
+* Project organization
 * Separation of concerns
 * Modular architecture
-* Testing
 * Dependency management
 * Virtual environments
 * Documentation
+* Git and GitHub
 
 ### Tools
 
 * Git
 * GitHub
 * Streamlit
-* Pytest
 * Python packaging
 
 ---
 
 # 🤝 Contributing
 
-Contributions and suggestions are welcome.
+Contributions, suggestions, and improvements are welcome.
 
 If you find a bug or have an idea for a new feature:
 
 1. Open an issue.
-2. Describe the problem or feature.
-3. Create a branch.
+2. Describe the problem or proposed feature.
+3. Create a new branch.
 4. Make your changes.
-5. Add or update tests.
+5. Test your changes locally.
 6. Submit a pull request.
 
 ---
