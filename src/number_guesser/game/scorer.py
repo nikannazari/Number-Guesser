@@ -1,7 +1,11 @@
 class Scorer:
     """Manage the player's score."""
 
-    def __init__(self, initial_score: int = 100, penalty: int = 10):
+    def __init__(
+        self,
+        initial_score: int = 100,
+        penalty: int = 10,
+    ):
         if initial_score < 0:
             raise ValueError("Initial score cannot be negative.")
 
@@ -14,12 +18,28 @@ class Scorer:
 
     @property
     def score(self) -> int:
+        """Return the current score."""
+
         return self._score
+
+    @property
+    def penalty(self) -> int:
+        """Return the configured penalty."""
+
+        return self._penalty
+
+    @property
+    def initial_score(self) -> int:
+        """Return the initial score."""
+
+        return self._initial_score
 
     def apply_penalty(self) -> None:
         """Decrease the score by the configured penalty."""
+
         self._score = max(0, self._score - self._penalty)
 
     def reset(self) -> None:
         """Reset the score to its initial value."""
+
         self._score = self._initial_score
