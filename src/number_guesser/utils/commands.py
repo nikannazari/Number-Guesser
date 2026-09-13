@@ -5,6 +5,7 @@ EXIT_COMMANDS = {
 }
 
 
-def is_exit_command(value: str) -> bool:
-    """Return True when the input represents an exit command."""
-    return value.strip().lower() in EXIT_COMMANDS
+def is_exit_command(command: str) -> bool:
+    """Return True if the command is an exit command."""
+
+    return command.strip().lower() in EXIT_COMMANDS
