@@ -1,5 +1,6 @@
 import streamlit as st
 
+from number_guesser.code_game.code_game import FourDigitCodeGame
 from number_guesser.game.game import NumberGuessingGame
 from number_guesser.game.hint_generator import GuessResult
 
@@ -86,6 +87,30 @@ st.markdown(
             background-color: rgba(244, 67, 54, 0.15);
             border: 1px solid rgba(244, 67, 54, 0.4);
         }
+
+        .feedback-digit {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+            padding: 0.8rem;
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+        }
+
+        .green-digit {
+            background-color: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+        }
+
+        .yellow-digit {
+            background-color: rgba(255, 193, 7, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.5);
+        }
+
+        .red-digit {
+            background-color: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+        }
     </style>
     """,
     unsafe_allow_html=True,
@@ -103,268 +128,258 @@ st.markdown(
 
 st.markdown(
     '<div class="game-subtitle">'
-    "Guess the secret number and try to keep your score!"
+    "Choose a game and test your guessing skills."
     "</div>",
     unsafe_allow_html=True,
 )
 
 
 # ---------------------------------------------------------
-# Session State Initialization
+# Game Selection
 # ---------------------------------------------------------
 
-if "game" not in st.session_state:
-    st.session_state.game = NumberGuessingGame(
-        start=1,
-        end=100,
-        initial_score=100,
-        penalty=10,
-        max_attempts=10,
-    )
+if "selected_game" not in st.session_state:
+    st.session_state.selected_game = "Number Guessing"
 
-if "last_result" not in st.session_state:
+selected_game = st.radio(
+    "Choose your game",
+    options=[
+        "Number Guessing",
+        "Four-Digit Code",
+    ],
+    horizontal=True,
+)
+
+if selected_game != st.session_state.selected_game:
+    st.session_state.selected_game = selected_game
+    st.session_state.number_game = None
+    st.session_state.code_game = None
     st.session_state.last_result = None
-
-if "last_guess" not in st.session_state:
-    st.session_state.last_guess = None
-
-if "repeated_guess" not in st.session_state:
-    st.session_state.repeated_guess = False
-
-
-game = st.session_state.game
+    st.session_state.last_code_response = None
+    st.rerun()
 
 
 # ---------------------------------------------------------
-# Sidebar
+# Number Guessing Game
 # ---------------------------------------------------------
 
-with st.sidebar:
-    st.header("⚙️ Game Settings")
+if selected_game == "Number Guessing":
+    if (
+        "number_game" not in st.session_state
+        or st.session_state.number_game is None
+    ):
+        st.session_state.number_game = NumberGuessingGame(
+            start=1,
+            end=100,
+            initial_score=100,
+            penalty=10,
+            max_attempts=10,
+        )
 
-    st.write(f"Minimum number: **{game.start}**")
-    st.write(f"Maximum number: **{game.end}**")
-    st.write(f"Initial score: **{game.initial_score}**")
-    st.write(f"Penalty per wrong guess: **{game.penalty}**")
+    if "last_result" not in st.session_state:
+        st.session_state.last_result = None
 
-    if game.max_attempts is None:
-        st.write("Maximum attempts: **Unlimited**")
-    else:
-        st.write(f"Maximum attempts: **{game.max_attempts}**")
+    game = st.session_state.number_game
+
+    st.subheader("🔢 Number Guessing Game")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric("Score", game.scorer.score)
+
+    with col2:
+        st.metric("Attempts", game.attempts)
+
+    with col3:
+        remaining = (
+            "∞"
+            if game.remaining_attempts is None
+            else game.remaining_attempts
+        )
+        st.metric("Remaining", remaining)
 
     st.divider()
 
+    if game.guesses:
+        st.subheader("📜 Guess History")
+        st.write(game.guesses)
+
+    if not game.finished:
+        guess = st.number_input(
+            "Enter a number",
+            min_value=game.start,
+            max_value=game.end,
+            value=game.start,
+            step=1,
+        )
+
+        if st.button(
+            "🎯 Make Guess",
+            use_container_width=True,
+            type="primary",
+        ):
+            response = game.make_guess(int(guess))
+            st.session_state.last_result = response.result
+            st.rerun()
+
+    if st.session_state.last_result == GuessResult.TOO_LOW:
+        st.warning("📉 Too low! Try a higher number.")
+
+    elif st.session_state.last_result == GuessResult.TOO_HIGH:
+        st.info("📈 Too high! Try a lower number.")
+
+    elif st.session_state.last_result == GuessResult.CORRECT:
+        st.success("🎉 Congratulations! You guessed the number!")
+        st.balloons()
+
+    if game.finished and game.lost:
+        st.error("💀 Game over!")
+        st.write(f"The secret number was: **{game.target}**")
+
+    if game.finished and game.won:
+        st.success(
+            f"You won with {game.attempts} attempts "
+            f"and a score of {game.scorer.score}."
+        )
+
     if st.button(
-        "🔄 Reset Game",
+        "🔄 Restart Number Game",
         use_container_width=True,
     ):
         game.reset()
         st.session_state.last_result = None
-        st.session_state.last_guess = None
-        st.session_state.repeated_guess = False
         st.rerun()
 
 
 # ---------------------------------------------------------
-# Statistics
+# Four-Digit Code Game
 # ---------------------------------------------------------
 
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.markdown(
-        f"""
-        <div class="stat-card">
-            <div class="stat-title">🏆 SCORE</div>
-            <div class="stat-value">{game.scorer.score}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-with col2:
-    st.markdown(
-        f"""
-        <div class="stat-card">
-            <div class="stat-title">🎲 ATTEMPTS</div>
-            <div class="stat-value">{game.attempts}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-with col3:
-    remaining_attempts = (
-        "∞"
-        if game.remaining_attempts is None
-        else game.remaining_attempts
-    )
-
-    st.markdown(
-        f"""
-        <div class="stat-card">
-            <div class="stat-title">⏳ REMAINING</div>
-            <div class="stat-value">{remaining_attempts}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-st.divider()
-
-
-# ---------------------------------------------------------
-# Guess History
-# ---------------------------------------------------------
-
-if game.guesses:
-    st.subheader("📜 Guess History")
-
-    history_columns = st.columns(min(len(game.guesses), 5))
-
-    for index, guessed_number in enumerate(game.guesses):
-        column_index = index % len(history_columns)
-
-        with history_columns[column_index]:
-            st.metric(
-                label=f"Guess {index + 1}",
-                value=guessed_number,
-            )
-
-
-# ---------------------------------------------------------
-# Game Area
-# ---------------------------------------------------------
-
-if not game.finished:
-    st.subheader("Make your guess")
-
-    guess = st.number_input(
-        "Enter a number",
-        min_value=game.start,
-        max_value=game.end,
-        value=game.start,
-        step=1,
-    )
-
-    if st.button(
-        "🎯 Make Guess",
-        use_container_width=True,
-        type="primary",
+else:
+    if (
+        "code_game" not in st.session_state
+        or st.session_state.code_game is None
     ):
-        response = game.make_guess(int(guess))
+        st.session_state.code_game = FourDigitCodeGame(
+            max_attempts=10,
+        )
 
-        st.session_state.last_result = response.result
-        st.session_state.last_guess = int(guess)
-        st.session_state.repeated_guess = response.repeated
+    if "last_code_response" not in st.session_state:
+        st.session_state.last_code_response = None
 
-        st.rerun()
+    game = st.session_state.code_game
 
+    st.subheader("🔐 Four-Digit Code Game")
 
-# ---------------------------------------------------------
-# Repeated Guess Message
-# ---------------------------------------------------------
-
-if st.session_state.repeated_guess:
-    st.warning(
-        "You already guessed this number. "
-        "Try a different number."
+    st.write(
+        "Guess a four-digit code without repeated digits or zero."
     )
 
-
-# ---------------------------------------------------------
-# Result Message
-# ---------------------------------------------------------
-
-if st.session_state.last_result == GuessResult.TOO_LOW:
     st.markdown(
         """
-        <div class="result-box low">
-            📉 <strong>TOO LOW!</strong>
-            <br>
-            Try a higher number.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        🟩 **Green:** Correct digit and position
 
-elif st.session_state.last_result == GuessResult.TOO_HIGH:
-    st.markdown(
+        🟨 **Yellow:** Correct digit, wrong position
+
+        🟥 **Red:** Digit does not exist
         """
-        <div class="result-box high">
-            📈 <strong>TOO HIGH!</strong>
-            <br>
-            Try a lower number.
-        </div>
-        """,
-        unsafe_allow_html=True,
     )
 
-elif st.session_state.last_result == GuessResult.CORRECT:
-    st.markdown(
-        """
-        <div class="result-box success-box">
-            🎉 <strong>Congratulations!</strong>
-            <br>
-            You guessed the secret number!
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    col1, col2 = st.columns(2)
 
-    st.balloons()
+    with col1:
+        st.metric("Attempts", game.attempts)
 
+    with col2:
+        remaining = (
+            "∞"
+            if game.remaining_attempts is None
+            else game.remaining_attempts
+        )
+        st.metric("Remaining", remaining)
 
-# ---------------------------------------------------------
-# Game Over
-# ---------------------------------------------------------
-
-if game.finished and game.lost:
-    st.markdown(
-        """
-        <div class="result-box game-over">
-            💀 <strong>Game Over!</strong>
-            <br>
-            You lost this round.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    if game.scorer.score == 0:
-        st.error("Your score reached zero.")
-
-    elif game.remaining_attempts == 0:
-        st.error("You used all of your attempts.")
-
-    st.info(f"The secret number was: **{game.target}**")
-
-
-# ---------------------------------------------------------
-# Win Information
-# ---------------------------------------------------------
-
-if game.finished and game.won:
-    st.success(
-        f"You won with {game.attempts} attempt(s) "
-        f"and a score of {game.scorer.score}!"
-    )
-
-
-# ---------------------------------------------------------
-# Restart
-# ---------------------------------------------------------
-
-if game.finished:
     st.divider()
 
+    if not game.finished:
+        guess = st.text_input(
+            "Enter your 4-digit code",
+            max_chars=4,
+            placeholder="1234",
+        )
+
+        if st.button(
+            "🔐 Check Code",
+            use_container_width=True,
+            type="primary",
+        ):
+            try:
+                response = game.make_guess(guess)
+                st.session_state.last_code_response = response
+
+            except ValueError as error:
+                st.error(str(error))
+
+            st.rerun()
+
+    response = st.session_state.last_code_response
+
+    if response is not None:
+        if response.repeated:
+            st.warning("You already tried this code.")
+
+        elif response.won:
+            st.success("🎉 Congratulations! You guessed the secret code!")
+            st.balloons()
+
+        else:
+            st.subheader("Feedback")
+
+            feedback_columns = st.columns(4)
+
+            for index, color in enumerate(response.feedback):
+                digit = response.guess[index]
+
+                with feedback_columns[index]:
+                    if color == "green":
+                        css_class = "green-digit"
+                        label = "Green"
+
+                    elif color == "yellow":
+                        css_class = "yellow-digit"
+                        label = "Yellow"
+
+                    else:
+                        css_class = "red-digit"
+                        label = "Red"
+
+                    st.markdown(
+                        f"""
+                        <div class="feedback-digit {css_class}">
+                            {digit}
+                            <br>
+                            <small>{label}</small>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+            if game.finished and game.lost:
+                st.error("💀 Game over!")
+                st.write(
+                    f"The correct code was: **{game.correct_code}**"
+                )
+
+    if game.guesses:
+        st.subheader("📜 Guess History")
+
+        for index, guessed_code in enumerate(game.guesses, start=1):
+            st.write(f"{index}. `{guessed_code}`")
+
     if st.button(
-        "🔄 Play Again",
+        "🔄 Restart Code Game",
         use_container_width=True,
     ):
         game.reset()
-        st.session_state.last_result = None
-        st.session_state.last_guess = None
-        st.session_state.repeated_guess = False
+        st.session_state.last_code_response = None
         st.rerun()
