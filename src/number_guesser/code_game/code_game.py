@@ -1,12 +1,9 @@
 import random
-
 from dataclasses import dataclass
 
 
 @dataclass
 class CodeGuessResponse:
-    """Represent the result of a four-digit code guess."""
-
     guess: str
     feedback: list[str]
     attempts: int
@@ -16,28 +13,32 @@ class CodeGuessResponse:
 
 
 class FourDigitCodeGame:
-    """Game engine for guessing a four-digit code."""
+    """
+    Four-Digit Code Guessing Game.
+
+    Rules:
+    - The secret code contains 4 digits.
+    - Digits are from 1 to 9.
+    - Digits cannot repeat.
+    - Green: correct digit in the correct position.
+    - Yellow: correct digit but wrong position.
+    - Red: digit does not exist in the secret code.
+    """
 
     CODE_LENGTH = 4
     AVAILABLE_DIGITS = "123456789"
 
-    def __init__(self, max_attempts: int | None = None) -> None:
-        if max_attempts is not None and max_attempts <= 0:
-            raise ValueError("Maximum attempts must be greater than zero.")
-
+    def __init__(self, max_attempts: int | None = None):
         self.max_attempts = max_attempts
-
         self.correct_code = self._create_random_code()
         self.attempts = 0
-        self.guesses: list[str] = []
-
         self.finished = False
         self.won = False
+        self.history: list[CodeGuessResponse] = []
+        self._guessed_codes: set[str] = set()
 
     @property
     def remaining_attempts(self) -> int | None:
-        """Return the number of remaining attempts."""
-
         if self.max_attempts is None:
             return None
 
@@ -45,13 +46,9 @@ class FourDigitCodeGame:
 
     @property
     def lost(self) -> bool:
-        """Return True if the player lost the game."""
-
         return self.finished and not self.won
 
     def _create_random_code(self) -> str:
-        """Create a random four-digit code without repeated digits."""
-
         return "".join(
             random.sample(
                 self.AVAILABLE_DIGITS,
@@ -60,7 +57,8 @@ class FourDigitCodeGame:
         )
 
     def validate_guess(self, guess: str) -> bool:
-        """Validate the player's guess."""
+        if not isinstance(guess, str):
+            return False
 
         if len(guess) != self.CODE_LENGTH:
             return False
@@ -77,54 +75,49 @@ class FourDigitCodeGame:
         return True
 
     def get_validation_error(self, guess: str) -> str | None:
-        """Return a validation error message, if any."""
+        if not isinstance(guess, str):
+            return "Guess must be text."
 
         if len(guess) != self.CODE_LENGTH:
-            return "Your guess must contain exactly 4 digits."
+            return "Code must contain exactly 4 digits."
 
         if not guess.isdigit():
-            return "Your guess must contain only digits."
+            return "Code must contain digits only."
 
         if "0" in guess:
-            return "Zero is not allowed in this game."
+            return "Digit 0 is not allowed."
 
         if len(set(guess)) != self.CODE_LENGTH:
-            return "Your guess must not contain repeated digits."
+            return "Digits cannot be repeated."
 
         return None
 
     def _generate_feedback(self, guess: str) -> list[str]:
-        """Generate color feedback for each digit."""
-
         feedback = []
 
         for index, digit in enumerate(guess):
             if digit == self.correct_code[index]:
                 feedback.append("green")
-
             elif digit in self.correct_code:
                 feedback.append("yellow")
-
             else:
                 feedback.append("red")
 
         return feedback
 
     def make_guess(self, guess: str) -> CodeGuessResponse:
-        """Process a player's code guess."""
-
         if self.finished:
             raise RuntimeError("The game has already finished.")
 
-        guess = guess.strip()
+        guess = str(guess).strip()
 
         validation_error = self.get_validation_error(guess)
 
         if validation_error is not None:
             raise ValueError(validation_error)
 
-        if guess in self.guesses:
-            return CodeGuessResponse(
+        if guess in self._guessed_codes:
+            response = CodeGuessResponse(
                 guess=guess,
                 feedback=[],
                 attempts=self.attempts,
@@ -133,48 +126,40 @@ class FourDigitCodeGame:
                 repeated=True,
             )
 
-        self.guesses.append(guess)
+            return response
+
+        self._guessed_codes.add(guess)
         self.attempts += 1
-
-        if guess == self.correct_code:
-            self.finished = True
-            self.won = True
-
-            return CodeGuessResponse(
-                guess=guess,
-                feedback=["green"] * self.CODE_LENGTH,
-                attempts=self.attempts,
-                finished=self.finished,
-                won=self.won,
-                repeated=False,
-            )
 
         feedback = self._generate_feedback(guess)
 
-        attempts_reached_limit = (
+        self.won = guess == self.correct_code
+
+        if self.won:
+            self.finished = True
+
+        elif (
             self.max_attempts is not None
             and self.attempts >= self.max_attempts
-        )
-
-        if attempts_reached_limit:
+        ):
             self.finished = True
-            self.won = False
 
-        return CodeGuessResponse(
+        response = CodeGuessResponse(
             guess=guess,
             feedback=feedback,
             attempts=self.attempts,
             finished=self.finished,
             won=self.won,
-            repeated=False,
         )
 
-    def reset(self) -> None:
-        """Start a new code game."""
+        self.history.append(response)
 
+        return response
+
+    def reset(self) -> None:
         self.correct_code = self._create_random_code()
         self.attempts = 0
-        self.guesses.clear()
-
         self.finished = False
         self.won = False
+        self.history = []
+        self._guessed_codes = set()
